@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Viewer eBook Mobile Friendly</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viewer eBook</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     body {
@@ -25,12 +26,15 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       max-width: 100%;
       height: auto;
+      user-select: none;   /* cegah seleksi teks */
+      pointer-events: none; /* cegah klik kanan */
     }
 
     .loading {
       margin: 20px;
       font-size: 14px;
       color: #666;
+      text-align: center;
     }
   </style>
 </head>
@@ -48,15 +52,15 @@
 
     let pdfDoc = null;
     let currentPage = 1;
-    const batchSize = 5; // render 5 halaman per batch
+    const batchSize = 3; // render 3 halaman per batch (lebih aman di HP)
 
     function renderPage(pageNum) {
       return pdfDoc.getPage(pageNum).then(page => {
-        const desiredWidth = Math.min(window.innerWidth * 0.9, 800);
+        const desiredWidth = Math.min(window.innerWidth * 0.95, 800);
         const unscaledViewport = page.getViewport({ scale: 1 });
         const scale = desiredWidth / unscaledViewport.width;
 
-        // batasi scale di HP
+        // batasi scale sesuai DPR (biar tidak terlalu berat)
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const viewport = page.getViewport({ scale: scale * dpr });
 
@@ -98,15 +102,23 @@
 
     pdfjsLib.getDocument(url).promise.then(pdf => {
       pdfDoc = pdf;
-      renderBatch();
+      renderBatch(); // mulai render batch pertama
     });
 
     // infinite scroll
     window.addEventListener("scroll", () => {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 150) {
         if (currentPage <= pdfDoc.numPages) {
           renderBatch();
         }
+      }
+    });
+
+    // cegah copy/save/inspect
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey && ["s", "p", "u"].includes(e.key.toLowerCase())) || e.key === "F12") {
+        e.preventDefault();
+        alert("Aksi ini tidak diizinkan 🚫");
       }
     });
   </script>
